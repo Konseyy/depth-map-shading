@@ -45,7 +45,7 @@ struct Args {
     #[arg(
         name = "Nearest point algorithm",
         short = 'a',
-        long = "nearest_algorithm",
+        long = "nearest-algorithm",
         default_value = "within_radius"
     )]
     algorithm: NearPointAlgorithm,

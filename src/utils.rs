@@ -4,6 +4,7 @@ use kd_tree::KdPoint;
 use nalgebra::{Const, Dyn, Matrix, SVector, VecStorage, SVD};
 use std::{
     f32::consts::PI,
+    ops::{Add, Mul},
     time::{Duration, Instant},
 };
 
@@ -47,6 +48,7 @@ impl KdPoint for CartesianCoordinate {
 pub enum OutputType {
     Shaded,
     Normals,
+    NormalsFull,
 }
 impl ValueEnum for OutputType {
     fn from_str(input: &str, _ignore_case: bool) -> Result<Self, String> {
@@ -60,10 +62,15 @@ impl ValueEnum for OutputType {
         match self {
             OutputType::Shaded => Some(clap::builder::PossibleValue::new("shaded")),
             OutputType::Normals => Some(clap::builder::PossibleValue::new("normals")),
+            OutputType::NormalsFull => Some(clap::builder::PossibleValue::new("normals_full")),
         }
     }
     fn value_variants<'a>() -> &'a [Self] {
-        &[OutputType::Shaded, OutputType::Normals]
+        &[
+            OutputType::Shaded,
+            OutputType::Normals,
+            OutputType::NormalsFull,
+        ]
     }
 }
 #[derive(Copy, Clone, Debug)]
@@ -111,12 +118,10 @@ pub fn text_coords_to_spherical(
     // Get percentages
     let perc_x = x as f32 / dimensions.0 as f32;
     let perc_y = y as f32 / dimensions.1 as f32;
-    // Convert to [-1, 1]
-    let clip_coords = (perc_x * 2. - 1., perc_y * 2. - 1.);
     // Convert to spherical coordinates
     return SphericalCoordinate {
-        theta: clip_coords.0 as f32 * PI,
-        phi: clip_coords.1 as f32 * (PI / 2.) + PI / 2.,
+        theta: perc_x * 2. * PI,
+        phi: perc_y * PI,
         r: depth,
         from_text: TextCoords { x, y },
     };
@@ -206,11 +211,11 @@ pub fn process_point(
         normal_full_vec *= -1.;
     }
 
-    const LIGHT_POS: Vec3 = Vec3::new(0., -3000., 0.);
+    const LIGHT_POS: Vec3 = Vec3::new(0., -2500., -100.);
 
     let light_dir = point.vec_coord - LIGHT_POS;
 
-    let dist_to_light = (light_dir.magnitude() / (256. * 40.)).min(1.);
+    let dist_to_light = (light_dir.magnitude() / (256. * 25.)).min(1.);
 
     let light_level = normal_full_vec.dot(&light_dir.normalize()).max(0.) * (1. - dist_to_light);
 
@@ -228,12 +233,21 @@ pub fn process_point(
         (normal_abs_vec.z * 255.) as u8,
     ];
 
+    let normal_col = normal_full_vec.mul(-0.5).add(Vec3::new(0.5, 0.5, 0.5));
+
+    let normal_full_rgb = [
+        (normal_col.x * 255.) as u8,
+        (normal_col.y * 255.) as u8,
+        (normal_col.z * 255.) as u8,
+    ];
+
     let text_coords = point.from_text;
     return ProcessedPoint {
         text_coords,
         rgb: match desired_output {
             OutputType::Shaded => shaded_rgb,
             OutputType::Normals => normal_abs_rgb,
+            OutputType::NormalsFull => normal_full_rgb,
         },
         tree_search_elapsed,
         plane_fit_elapsed,

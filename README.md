@@ -4,10 +4,10 @@ This is a CLI tool for shading 3D scenes given in equirectangular depth map form
 # Example
 
 ```
-$ cargo run -r -- -i ./example/in1.png -o my_output.jpg -k 50
+$ cargo run -r -- -i ./example/inputs/in1.png -o my_output.jpg -k 50
 ```
 
-This will generate a normal map from the `./example/in1.png` equirectangular depth map and save it as `./my_output.jpg`.
+This will generate a normal map from the `./example/inputs/in1.png` equirectangular depth map and save it as `./my_output.jpg`.
 
 ### Disclaimer
 
