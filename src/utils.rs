@@ -108,23 +108,25 @@ pub fn text_coords_to_spherical(
     dimensions: (u32, u32),
     depth: f32,
 ) -> SphericalCoordinate {
+    // Get percentages
     let perc_x = x as f32 / dimensions.0 as f32;
     let perc_y = y as f32 / dimensions.1 as f32;
+    // Convert to [-1, 1]
     let clip_coords = (perc_x * 2. - 1., perc_y * 2. - 1.);
+    // Convert to spherical coordinates
     return SphericalCoordinate {
         theta: clip_coords.0 as f32 * PI,
-        phi: clip_coords.1 as f32 * (PI / 2.),
+        phi: clip_coords.1 as f32 * (PI / 2.) + PI / 2.,
         r: depth,
         from_text: TextCoords { x, y },
     };
 }
 
 pub fn spherical_to_cartesian(sph: &SphericalCoordinate) -> CartesianCoordinate {
-    let adjusted_phi = sph.phi + PI / 2.;
     let vec = Vec3::new(
-        sph.r * adjusted_phi.sin() * sph.theta.cos(),
-        sph.r * adjusted_phi.sin() * sph.theta.sin(),
-        sph.r * adjusted_phi.cos(),
+        sph.r * sph.phi.sin() * sph.theta.cos(),
+        sph.r * sph.phi.sin() * sph.theta.sin(),
+        sph.r * sph.phi.cos(),
     );
     return CartesianCoordinate {
         vec_coord: vec,
@@ -169,7 +171,6 @@ pub fn process_point(
     }
 
     // Calculate normal of the plane using SVD
-    // https://math.stackexchange.com/a/99317
     let centroid = sum / num_points_sampled as f32;
 
     // store the nearest points in a 3 x N matrix where N = number of points sampled
